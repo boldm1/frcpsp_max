@@ -5,22 +5,30 @@ def temporal_analysis(project):
     ### initialise distance graph ###
     dgraph = [[array([[float('-inf'),float('-inf')],[float('-inf'),float('-inf')]]) for j in project.tasks] for i in project.tasks] # dgraph[i][j] = [[d_si->sj, d_si->fj],[d_fi->sj, d_fi->fj]]
     for i in project.tasks:
-        dgraph[i][i] = array([[0,project.tasks[i].d],[-project.tasks[i].d,0]])
+        dgraph[i][i] = array([[0,project.tasks[i].d_min],[-project.tasks[i].d_max,0]])
     for i in project.tasks:
-        for j in project.tasks[i].successors:
-            d_i = project.tasks[i].d
-            d_j = project.tasks[j[0]].d
-            dgraph[i][j[0]] = array([[j[1],j[1]+d_j], [j[1]-d_i,j[1]-d_i+d_j]]) 
+        for j in range(4): # precedence relation type
+            for k in project.tasks[i].successors[j]:
+                if j == 0: #S->S relation
+                    dgraph[i][k[0]][0][0] = k[1]
+                if j == 1: #S->F relation
+                    dgraph[i][k[0]][0][1] = k[1]
+                if j == 2: #F->S relation
+                    dgraph[i][k[0]][1][0] = k[1]
+                if j == 3: #F->F relation
+                    dgraph[i][k[0]][1][1] = k[1]
+
     ### floyd-warshall algorithm ###
     for k in project.tasks:
         for i in project.tasks:
-            for j in project.tasks:
-                d_i = project.tasks[i].d
-                d_j = project.tasks[j].d
-                new_minlag = max(dgraph[i][j][0][0], dgraph[i][k][0][0]+dgraph[k][j][0][0]) # min(d_si->sj, d_si->sk + d_sk->sj)
-                dgraph[i][j] = array([[new_minlag,new_minlag+d_j], [new_minlag-d_i,new_minlag-d_i+d_j]])
-    for i in project.tasks:
-        print([dgraph[i][j][0][0] for j in project.tasks])
+            jrange = list(range(len(project.tasks)))
+            jrange.append(0) # a final additional iteration is needed to complete cycle
+
+            for j in jrange: 
+                dgraph[i][j][0][0] = max(dgraph[i][j][0][0], max(dgraph[i][k][0][0]+dgraph[k][j][0][0], dgraph[i][k][0][1]+dgraph[k][j][1][0])) # min(d_si->sj, d_si->k + d_k->sj)
+                dgraph[i][j][0][1] = max(dgraph[i][j][0][1], max(dgraph[i][k][0][0]+dgraph[k][j][0][1], dgraph[i][k][0][1]+dgraph[k][j][1][1])) # min(d_si->fj, d_si->k + d_k->fj)
+                dgraph[i][j][1][0] = max(dgraph[i][j][1][0], max(dgraph[i][k][1][0]+dgraph[k][j][0][0], dgraph[i][k][1][1]+dgraph[k][j][1][0])) # min(d_fi->sj, d_fi->k + d_k->sj)
+                dgraph[i][j][1][1] = max(dgraph[i][j][1][1], max(dgraph[i][k][1][0]+dgraph[k][j][0][1], dgraph[i][k][1][1]+dgraph[k][j][1][1])) # min(d_fi->fj, d_fi->k + d_k->fj)
     ### checking feasibility ###
     for i in project.tasks:
         if dgraph[i][i][0][0] != 0 or dgraph[i][i][1][1] != 0:
@@ -30,10 +38,12 @@ def temporal_analysis(project):
     min_network = [[[] for j in project.tasks] for i in project.tasks]
     for i in project.tasks:
         for j in project.tasks:
-           min_network[i][j] = array([[[dgraph[j][i][0][0],-dgraph[i][j][0][0]], [dgraph[j][i][0][1],-dgraph[i][j][0][1]]], [[dgraph[j][i][1][0],-dgraph[i][j][1][0]], [dgraph[j][i][1][1], -dgraph[i][j][1][1]]]])
-#    for i in project.tasks:
-#        for j in project.tasks:
-#            print('%d,%d:\n ' %(i,j), min_network[i][j])
+           min_network[i][j] = array([[[dgraph[i][j][0][0],-dgraph[j][i][0][0]], [dgraph[i][j][0][1],-dgraph[j][i][1][0]]], [[dgraph[i][j][1][0],-dgraph[j][i][0][1]], [dgraph[i][j][1][1], -dgraph[j][i][1][1]]]])
+    for i in project.tasks:
+        for j in project.tasks:
+            print('%d,%d:\n ' %(i,j), min_network[i][j])
+
+
 
 
 
