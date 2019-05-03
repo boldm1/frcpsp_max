@@ -1,4 +1,4 @@
-
+import math
 
 class Task():
     
@@ -8,3 +8,10 @@ class Task():
         self.w = w
         self.q_min = q_min
         self.q_max = q_max
+        try:
+            self.d_max = math.ceil(self.w/self.q_min[0])
+            self.d_min = math.ceil(self.w/self.q_max[0])
+        except ZeroDivisionError:
+            self.d_max = 0
+            self.d_min = 0
+
