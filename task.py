@@ -2,8 +2,9 @@
 
 class Task():
     
-    def __init__(self, id, successors, d, q):
+    def __init__(self, id, successors, w, q_min, q_max):
         self.id = id
-        self.successors = successors # ((F-->S) successor_id, min. time-lag)
-        self.d = d
-        self.q = q
+        self.successors = successors # e.g. successor[i=2(FS)] = [(FS successor id, min. time-lag),...]
+        self.w = w
+        self.q_min = q_min
+        self.q_max = q_max
