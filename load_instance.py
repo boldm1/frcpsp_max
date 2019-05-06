@@ -5,6 +5,7 @@ from pathlib import Path
 from task import Task
 from project import Project
 from temporal_analysis import temporal_analysis
+from nongreedy_heuristic import nongreedy_heuristic
 
 def load_instance(path_to_file):
     f = open(path_to_file, 'r')
@@ -52,16 +53,17 @@ def load_instance(path_to_file):
         task = Task(task_id, successors, w, q_min, q_max)
         tasks[task_id] = task 
     last_line = stripped_lines[2*n_activities+1]
-    R = [] # resource_availabilities
+    R_max = [] # resource_availabilities
     for r in range(n_resources):
-        R.append(int(last_line[r]))
+        R_max.append(int(last_line[r]))
     l = int(last_line[n_resources]) # min. block length
-    project = Project(path_to_file, tasks, R, l)
+    project = Project(path_to_file, tasks, R_max, l)
     return(project)
 
 test_instances_dir = Path("test_instances")
 project = load_instance(test_instances_dir/'test_ex.sch')
 temporal_analysis(project)
+nongreedy_heuristic(project)
 
 
 
