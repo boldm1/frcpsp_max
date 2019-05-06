@@ -1,3 +1,4 @@
+import sys
 import re
 from pathlib import Path
 
@@ -26,8 +27,19 @@ def load_instance(path_to_file):
         k = 0 # counter to track where in line1 to get desired info.
         for i in range(4):
             if n_successors[i] > 0:
-                for j in range(n_successors[i]):
-                    successors[i].append((int(line1[6+2*k+j]), int(line1[6+2*k+n_successors[i]+j]))) # e.g. successor[i=2(FS)] = [(FS successor id, min. time-lag),...]
+                try:
+                    for j in range(n_successors[i]):
+                        successors[i].append((int(line1[6+2*k+j]), int(line1[6+2*k+n_successors[i]+j]))) # e.g. successor[i=2(FS)] = [(FS successor id, min. time-lag),...]
+                except IndexError:
+                    if i == 0:
+                        print('Was expecting a start -> start successor for activity %d, but none found.' %task_id)
+                    elif i == 1:
+                        print('Was expecting a start -> finish successor for activity %d, but none found.' %task_id)
+                    elif i == 2:
+                        print('Was expecting a finish -> start successor for activity %d, but none found.' %task_id)
+                    elif i == 3:
+                        print('Was expecting a finish -> finish successor for activity %d, but none found.' %task_id)
+                    sys.exit(1)
             k += n_successors[i]
         ### second block ###
         line2 = stripped_lines[n_activities+activity+1]
