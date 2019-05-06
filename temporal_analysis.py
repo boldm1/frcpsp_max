@@ -1,5 +1,4 @@
 from numpy import *
-from itertools import *
 
 # returns feasible start time interval for each activity
 def temporal_analysis(project):
