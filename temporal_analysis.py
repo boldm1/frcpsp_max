@@ -1,23 +1,8 @@
 from numpy import *
 
-# returns feasible start time interval for each activity
+# updates dgraph for a given project
 def temporal_analysis(project):
-    ### initialise distance graph ###
-    dgraph = [[array([[float('-inf'),float('-inf')],[float('-inf'),float('-inf')]]) for j in project.tasks] for i in project.tasks] # dgraph[i][j] = [[d_si->sj, d_si->fj],[d_fi->sj, d_fi->fj]]
-    for i in project.tasks:
-        dgraph[i][i] = array([[0,project.tasks[i].d_min],[-project.tasks[i].d_max,0]])
-    for i in project.tasks:
-        for j in range(4): # precedence relation type
-            for k in project.tasks[i].successors[j]:
-                if j == 0: #S->S relation
-                    dgraph[i][k[0]][0][0] = k[1]
-                if j == 1: #S->F relation
-                    dgraph[i][k[0]][0][1] = k[1]
-                if j == 2: #F->S relation
-                    dgraph[i][k[0]][1][0] = k[1]
-                if j == 3: #F->F relation
-                    dgraph[i][k[0]][1][1] = k[1]
-
+    dgraph = project.dgraph
     ### floyd-warshall algorithm ###
     for k in project.tasks:
         for i in project.tasks:
@@ -32,6 +17,7 @@ def temporal_analysis(project):
         if dgraph[i][i][0][0] != 0 or dgraph[i][i][1][1] != 0:
             print('Project is infeasible.')
             return(1)
+    project.dgraph = dgraph
     ### minimal network ###
     min_network = [[[] for j in project.tasks] for i in project.tasks]
     for i in project.tasks:
@@ -41,11 +27,14 @@ def temporal_analysis(project):
 #    for i in project.tasks:
 #        for j in project.tasks:
 #            print('%d,%d:\n ' %(i,j), min_network[i][j])
+    ### update min and max task durations ###
+    for task in project.tasks.values():
+        task.d_min = min_network[task.id][task.id][0][1][0]
+        task.d_max = min_network[task.id][task.id][0][1][1]
     ### earliest starts wrt temporal constraints ###
     for task in project.tasks.values():
-        task.ES = dgraph[0][task.id][0][0]
-    
-
+        task.ES = min_network[0][task.id][0][0][0]
+        task.LS = min_network[0][task.id][0][0][1]
 
 
 

@@ -14,5 +14,6 @@ class Task():
         except ZeroDivisionError:
             self.d_max = 0
             self.d_min = 0
-        self.ES = float('inf') # Earliest start wrt temporal constraints (updated in temporal_analysis function)
+        self.ES = float('-inf') # Earliest start wrt temporal constraints (updated in temporal_analysis function)
+        self.LS = float('inf')
 

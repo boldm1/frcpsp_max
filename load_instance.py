@@ -62,7 +62,6 @@ def load_instance(path_to_file):
 
 test_instances_dir = Path("test_instances")
 project = load_instance(test_instances_dir/'test_ex.sch')
-temporal_analysis(project)
 nongreedy_heuristic(project)
 
 
