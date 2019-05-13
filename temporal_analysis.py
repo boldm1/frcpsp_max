@@ -18,23 +18,14 @@ def temporal_analysis(project):
             print('Project is infeasible.')
             return(1)
     project.dgraph = dgraph
-    ### minimal network ###
-    min_network = [[[] for j in project.tasks] for i in project.tasks]
-    for i in project.tasks:
-        for j in project.tasks:
-           min_network[i][j] = array([[[dgraph[i][j][0][0],-dgraph[j][i][0][0]], [dgraph[i][j][0][1],-dgraph[j][i][1][0]]], [[dgraph[i][j][1][0],-dgraph[j][i][0][1]], [dgraph[i][j][1][1], -dgraph[j][i][1][1]]]])
-    project.temporal_network = min_network
-#    for i in project.tasks:
-#        for j in project.tasks:
-#            print('%d,%d:\n ' %(i,j), min_network[i][j])
     ### update min and max task durations ###
     for task in project.tasks.values():
-        task.d_min = min_network[task.id][task.id][0][1][0]
-        task.d_max = min_network[task.id][task.id][0][1][1]
+        task.d_min = dgraph[task.id][task.id][0][1]
+        task.d_max = -dgraph[task.id][task.id][1][0]
     ### earliest starts wrt temporal constraints ###
     for task in project.tasks.values():
-        task.ES = min_network[0][task.id][0][0][0]
-        task.LS = min_network[0][task.id][0][0][1]
+        task.ES = dgraph[0][task.id][0][0]
+        task.LS = -dgraph[task.id][0][0][0]
 
 
 
