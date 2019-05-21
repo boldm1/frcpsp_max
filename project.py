@@ -5,12 +5,13 @@ from temporal_analysis import temporal_analysis
 
 class Project():
 
-    def __init__(self, name, tasks, R_max, l):         
+    def __init__(self, name, tasks, R_max, l_min):         
         self.name = name
         self.tasks = tasks # tasks = {task_id : task_object}
         self.R_max = R_max # resource availabilities
-        self.l = l # min. block length
+        self.l_min = l_min # min. block length
         self.T = 40 
+        self.init_dgraph = self.dgraph_init() # initial dgraph. Useful for unscheduling step
         self.dgraph = self.dgraph_init()
         temporal_analysis(self)
 

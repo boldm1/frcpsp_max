@@ -1,8 +1,9 @@
 from numpy import *
+from copy import deepcopy
 
 # updates dgraph for a given project
 def temporal_analysis(project):
-    dgraph = project.dgraph
+    dgraph = deepcopy(project.dgraph)
     ### floyd-warshall algorithm ###
     for k in project.tasks:
         for i in project.tasks:
@@ -17,16 +18,20 @@ def temporal_analysis(project):
         if dgraph[i][i][0][0] != 0 or dgraph[i][i][1][1] != 0:
             print('Project is infeasible.')
             return(1)
-    project.dgraph = dgraph
-    ### update min and max task durations ###
+    project.dgraph = deepcopy(dgraph)
+    ### update d_min, d_max, ES, LS, q_min, q_max ###
     for task in project.tasks.values():
         task.d_min = dgraph[task.id][task.id][0][1]
         task.d_max = -dgraph[task.id][task.id][1][0]
-    ### earliest starts wrt temporal constraints ###
-    for task in project.tasks.values():
         task.ES = dgraph[0][task.id][0][0]
         task.LS = -dgraph[task.id][0][0][0]
-
+        # only updating work-content resource limits
+        if task.d_max == 0:
+            task.q_min[0] = 0
+            task.q_max[0] = 0
+        else:
+            task.q_min[0] = task.w/task.d_max
+            task.q_max[0] = task.w/task.d_min
 
 
 

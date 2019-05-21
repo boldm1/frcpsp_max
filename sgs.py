@@ -1,37 +1,58 @@
 import math
+from numpy import *
+from copy import deepcopy
 
-from schedule import Schedule
 from temporal_analysis import temporal_analysis
 
 # considering just a single resource (the work-content resource 0)!!
 
 #attempts to construct a schedule given an activity list representation
-def sgs(project, alr):
-    schedule = Schedule(project)
+def sgs(project, schedule, alr, unscheduling_counter):
     for task in alr:
-        greedily_schedule_task(task, project, schedule)
-    print("Task 1 resource usage: ", schedule.task_resource_usage[0][1])
-    print("Task 2 resource usage: ", schedule.task_resource_usage[0][2])
-    print("Task 3 resource usage: ", schedule.task_resource_usage[0][3])
-    print(schedule.resource_availability[0])
+        delta = greedily_schedule_task(task, project, schedule)
+        # if greedily_schedule_task fails (misses max. time-lag)
+        if delta is not None:     
+            print('greedy scheduling has failed')
+            print('attempting unscheduling step')
+            unscheduling_counter += 1
+            if unscheduling(task, project, schedule, delta, unscheduling_counter):
+                print('unscheduling has failed. project is infeasible')
+                return 1
+            else:
+                # removing already scheduled tasks from alr
+                for task in alr:
+                    if task in schedule.tasks_scheduled:
+                        alr.remove(task)
+                # attempt to schedule remaining activities
+                return sgs(project, schedule, alr, unscheduling_counter)
+        # if greedily_schedule_task succeeds
+        else:
+            print("Task %d resource usage: " %task.id, schedule.task_resource_usage[0][task.id])
+            ### update dgraph given actual task start ###
+            project.dgraph[0][task.id][0][0] = schedule.task_starts[task.id]
+            project.dgraph[task.id][0][0][0] = -schedule.task_starts[task.id]
+            temporal_analysis(project)
 
 def greedily_schedule_task(task, project, schedule, counter=0):
     task_start = task.ES+counter
     ### Initialise temporary current schedule ###
-    task_resource_usage = schedule.task_resource_usage
-    task_resource_usage_changes = schedule.task_resource_usage_changes
-    resource_availability = schedule.resource_availability
-    
+    task_resource_usage = deepcopy(schedule.task_resource_usage)
+    resource_availability = deepcopy(schedule.resource_availability)
     t = task_start
     zeta = task.w # work-content remaining (still to be processed)
     l = project.l_min # time since last change in resource allocation
     while zeta > 0:
         resource_available = resource_availability[0][t]
-        # not enough resource at time t
+        # if time-feasible windows has been missed
+        if task_start > task.LS:
+            print("time-feasible window of activity %d has been missed by %d time units" %(task.id, task_start - task.LS))
+            # return failure
+            return task_start - task.LS
+        # if not enough resource at time t
         if resource_available < task.q_min[0]:
             print("can't schedule task %d at time %d" %(task.id, t))
-            greedily_schedule_task(task, project, schedule, counter+1)
-            return
+            # try starting activity next period
+            return greedily_schedule_task(task, project, schedule, counter+1)
         else:
             # if task has not yet started
             if t == task_start:
@@ -42,7 +63,7 @@ def greedily_schedule_task(task, project, schedule, counter=0):
                 if l >= project.l_min:
                     # if at least enough resource to continue current block
                     if resource_available >= task_resource_usage[0][task.id][t-1]:
-                        q = min(resource_available, task.q_max[0], zeta/task_resource_usage[0][task.id][t-1])
+                        q = min(resource_available, task.q_max[0], zeta/project.l_min)
                         # if changing resource allocation is better
                         if (math.ceil(zeta/q) >= project.l_min) and (math.ceil(zeta/q) < math.ceil(zeta/task_resource_usage[0][task.id][t-1])): 
                             # the above value of q is kept
@@ -66,43 +87,56 @@ def greedily_schedule_task(task, project, schedule, counter=0):
         resource_availability[0][t] -= q
         zeta -= q
         t += 1
+    schedule.tasks_scheduled.append(task)
+    schedule.task_starts[task.id] = task_start
+    schedule.task_ends[task.id] = t
+    schedule.task_resource_usage[0][task.id] = task_resource_usage[0][task.id]
+    schedule.resource_availability[0] = resource_availability[0]
 
+def unscheduling(task_star, project, schedule, delta, counter, u_max=10):
+    # find activities that determine LS_task
+    U = []
+    for task in schedule.tasks_scheduled:
+        # if LS_j = S_i + SS^max_ij
+        if task.id != 0 and task_star.LS == schedule.task_starts[task.id] - project.dgraph[task_star.id][task.id][0][0]:
+            U.append(task)
+    # if there is no feasible solution
+    if U == []:
+        print('U is empty')
+        return 1
+    elif counter > u_max:
+        print('maximum number of unscheduling steps has been exceeded!')
+        return 1
+    else:
+        U_min_start = min([schedule.task_starts[task.id] for task in U])
+        # right-shift and unschedule activites in U
+        for task in U:
+            task.ES = schedule.task_starts[task.id] + delta
+            for t in range(schedule.task_starts[task.id],schedule.task_ends[task.id]+1):
+                schedule.resource_availability[0][t] += schedule.task_resource_usage[0][task.id][t]
+            schedule.task_resource_usage[0][task.id] = [0 for t in range(project.T)]
+            del schedule.task_starts[task.id]
+            del schedule.task_ends[task.id]
+            schedule.tasks_scheduled.remove(task)
+        # unschedule all activities i with S_i > min(S_h for h in U)
+        for task in schedule.tasks_scheduled:
+            if schedule.task_starts[task.id] > U_min_start:
+                for t in range(schedule.task_starts[task.id],schedule.task_ends[task.id]+1):
+                    schedule.resource_availability[0][t] += schedule.task_reource_usage[0][task.id][t]
+                schedule.task_resource_usage[0][task.id] = [0 for t in range(project.T)]
+                del schedule.task_starts[task.id]
+                del schedule.task_ends[task.id]
+                schedule.tasks_scheduled.remove(task.id)
+        # update ES and LS having unscheduled tasks
+        for i in project.tasks:
+            for j in project.tasks:
+                if (j != i) and (project.tasks[i] not in schedule.tasks_scheduled):
+                    project.dgraph[i][j] = project.init_dgraph[i][j]
+        for task in U:
+            project.dgraph[0][task.id][0][0] = task.ES
+        temporal_analysis(project)
+        # if there is no feasible solution
+        if task.ES > task.LS:
+            return 1
 
-
-
-#    while zeta > 0.1:
-#        # if min. block length has been satisfied
-#        if l >= project.l_min:
-#            resource_available = resource_availability[0][t]
-#            if resource_available < task.q_min[0]:
-#                greedily_schedule_task(task, project, schedule, counter+1)
-#                return
-#            else:
-#                if resource_available >= task_resource_usage[0][task.id][t-1]:
-#                    q = min(resource_available, task.q_max[0], zeta/project.l_min)
-#                    if (math.ceil(zeta/q) >= project.l_min) and (math.ceil(zeta/q) < math.ceil(zeta/task_resource_usage[0][task.id][t-1])):
-#                        task_resource_usage[0][task.id][t] = q
-#                    else:
-#                        task_resource_usage[0][task.id][t] = task_resource_usage[0][task.id][t]
-#                else:
-#                    task_resource_usage[0][task.id][t] = resource_available
-#                resource_availability[0][t] -= task_resource_usage[0][task.id][t]
-#                zeta -= task_resource_usage[0][task.id][t]
-#                if task_resource_usage[0][task.id][t] == task_resource_usage[0][task.id][t-1]:
-#                    l += 1
-#                else:
-#                    l = 1
-#        # if min. block length has not yet been satisfied
-#        else:
-#            task_resource_usage[0][task.id][t] = task_resource_usage[0][task.id][t-1]
-#            resource_availability[0][t] -= task_resource_usage[0][task.id][t]
-#            zeta -= task_resource_usage[0][task.id][t]
-#            l += 1
-#        # if there are not enough resources to schedule activity at time t
-#        if resource_availability[0][t] < 0:
-#            greedily_schedule_task(task, project, schedule, counter+1)
-#            return
-#        else:
-#            t += 1
-#
 
