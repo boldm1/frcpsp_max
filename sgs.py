@@ -7,7 +7,69 @@ from temporal_analysis import temporal_analysis
 # considering just a single resource (the work-content resource 0)!!
 
 #attempts to construct a schedule given an activity list representation
-def sgs(project, schedule, alr, unscheduling_counter):
+def sgs(project, alr):
+    conglomerates = get_conglomerates(project, alr)
+    print(conglomerates)
+#    for task in alr:
+
+def get_conglomerates(project, alr):
+    project_cycles = [cycle[:-1] for cycle in deepcopy(project.cycles)]
+    n = len(alr)
+    n_cycles = len(project.cycles)
+    i = 0
+    inside_CON = 0 # indicates if inside conglomerate
+    c_in_CON = [] # indices of uncompleted cycles in current conglomerate
+    n_CON = 0 # number of conglomerates
+    conglomerates = [] # list of conglomerates
+    while i < n:
+        if inside_CON == 0:
+            # continue up until first activity in a cycle
+            while (i < n) and ([alr[i].id for cycle in project_cycles if alr[i].id in cycle] == []):
+                i += 1
+            if i == n:
+                return conglomerates
+            # for activities that are in a cycle...
+            # get index of cycle to which alr[i] belongs
+            j = next(index for index,cycle in enumerate(project_cycles) if alr[i].id in cycle)
+            c_in_CON.append(j)
+            inside_CON = 1
+            n_CON += 1
+            conglomerates.append([alr[i].id])
+        elif inside_CON == 1:
+            # continue through activities that are not in a cycle
+            while [alr[i].id for cycle in project_cycles if alr[i].id in cycle] == []:
+                conglomerates[n_CON-1].append(alr[i].id)
+                i += 1  
+            # for activities that are in a cycle...
+            # get index of cycle to which alr[i] belongs
+            j_set = [index for index,cycle in enumerate(project_cycles) if alr[i].id in cycle]
+#            j = next(index for index,cycle in enumerate(project_cycles) if alr[i].id in cycle)
+#            print('j', j)
+            # remove activity from cycle
+            for j in j_set:
+                project_cycles[j].remove(alr[i].id)
+                # if new cycle has been encountered
+                if j not in c_in_CON:
+                    c_in_CON.append(j)
+                    conglomerates[n_CON-1].append(alr[i].id)
+                # if we have come to the end of a cycle
+                if project_cycles[j] == []:
+                    c_in_CON.remove(j)
+                # if we have come to the end of a conglomerate
+                if c_in_CON == []:
+                    inside_CON = 0
+            i += 1
+    return conglomerates
+
+
+                
+
+
+
+
+
+#attempts to construct a schedule given an activity list representation
+def old_sgs(project, schedule, alr, unscheduling_counter):
     for task in alr:
         delta = greedily_schedule_task(task, project, schedule)
         # if greedily_schedule_task fails (misses max. time-lag)
