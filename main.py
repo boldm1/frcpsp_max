@@ -5,10 +5,11 @@ from load_instance import load_instance
 from schedule import Schedule
 from temporal_analysis import temporal_analysis
 from sgs import sgs
+from plot_schedule import plot_schedule
 
 
 test_instances_dir = Path("test_instances")
-project = load_instance(test_instances_dir/'sm_j10'/'PSP1_r1.sch')
+project = load_instance(test_instances_dir/'sm_j10'/'PSP3_r1.sch')
 #print(project.R_max)
 temporal_analysis(project)
 #for task in project.tasks.values():
@@ -25,4 +26,7 @@ for task in project.tasks.values():
 #schedule = Schedule(project)
 #if sgs(project, schedule, alr, unscheduling_counter):
 #    print('project is infeasible')
-sgs(project, alr)
+schedule = sgs(project, alr)
+for task in alr:
+    print('%d' %task.id, schedule.task_resource_usage[0][task.id])
+plot_schedule(schedule)
