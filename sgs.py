@@ -2,7 +2,7 @@ import math
 from numpy import *
 from copy import deepcopy
 
-from temporal_analysis import temporal_analysis
+#from temporal_analysis import temporal_analysis
 from schedule import Schedule
 
 # considering just a single resource (the work-content resource 0)!!
@@ -14,18 +14,18 @@ def sgs(project, alr):
         schedule = greedily_schedule_task(task, project, schedule)
         # if greedy scheduling of task fails (i.e. misses max. time-lag)
         if schedule == 1:
-            print('greedy scheduling has failed')
+#            print('greedy scheduling has failed')
             return 1
         else:
             ### update dgraph given actual task start ###
-            project.dgraph[0][task.id][0][0] = schedule.task_starts[task.id]
-            project.dgraph[task.id][0][0][0] = -schedule.task_starts[task.id]
-            temporal_analysis(project)
-    print('a feasible schedule has been found')
+            schedule.dgraph[0][task.id][0][0] = schedule.task_starts[task.id]
+            schedule.dgraph[task.id][0][0][0] = -schedule.task_starts[task.id]
+            schedule.temporal_analysis()
+#    print('a feasible schedule has been found')
     return schedule
 
 def greedily_schedule_task(task, project, schedule, counter=0):
-    task_start = task.ES+counter
+    task_start = task.ES + counter
     ### Initialise temporary current schedule ###
     task_resource_usage = deepcopy(schedule.task_resource_usage)
     resource_availability = deepcopy(schedule.resource_availability)
@@ -36,12 +36,12 @@ def greedily_schedule_task(task, project, schedule, counter=0):
         resource_available = resource_availability[0][t]
         # if time-feasible windows has been missed
         if task_start > task.LS:
-            print("time-feasible window of activity %d has been missed by %d time units" %(task.id, task_start - task.LS))
+#            print("time-feasible window of activity %d has been missed by %d time units" %(task.id, task_start - task.LS))
             # return failure
             return 1
         # if not enough resource at time t
         if resource_available < task.q_min[0]:
-            print("can't schedule task %d at time %d" %(task.id, t))
+#            print("can't schedule task %d at time %d" %(task.id, t))
             # try starting activity next period
             return greedily_schedule_task(task, project, schedule, counter+1)
         else:
@@ -78,6 +78,7 @@ def greedily_schedule_task(task, project, schedule, counter=0):
         resource_availability[0][t] -= q
         zeta -= q
         t += 1
+#    print('Task %d has been scheduled at time %d' %(task.id, task_start))
     schedule.tasks_scheduled.append(task)
     schedule.task_starts[task.id] = task_start
     schedule.task_ends[task.id] = t
