@@ -1,5 +1,6 @@
 import math
 import random
+import itertools
 import more_itertools as mit
 from copy import deepcopy
 
@@ -32,16 +33,72 @@ def evolutionary_algorithm(project):
     
     alr1 = [project.tasks[i] for i in [0,1,3,2,4,5,6,7,8]]
     alr2 = [project.tasks[i] for i in [0,2,3,4,5,6,1,7,8]]
-    alr = [0,1,2,3,4,5,6,7,8]
+    alr = [project.tasks[i] for i in [0,1,2,3,4,5,6,7,8]]
     crossover(project, alr, alr1, alr2)
 
 def crossover(project, alr, alr1, alr2):
     sublists = get_conglomerate_sublists(project, alr1, alr2)
     suitable_range = get_suitable_range(project, sublists)
-    new_alr = create_new_alr(project, alr, suitable_range)
+#    new_alr = create_new_alr(project, alr, suitable_range)
+    create_new_alr(project, alr, suitable_range)
 
 def create_new_alr(project, alr, suitable_range):
-    stuff...
+    new_alr = [None for i in range(len(alr))]
+    # position of sublists (min. position of a task in the sublist) in alr
+    p_sublists = {}
+    for i in range(len(suitable_range)):
+        p_sublists[i] = min(alr.index(task) for task in suitable_range[i])
+    # list of ids of tasks that are not in any sublist in the suitable range
+    nonsublist_tasks = [task.id for task in project.tasks.values() if task not in list(itertools.chain.from_iterable(suitable_range))]
+    # list of ids of predecessors of activities in sublists, ordered according to alr
+    pred_sublists = {}     
+    print('suitable range', [[task.id for task in sublist] for sublist in suitable_range])
+    for i in range(len(suitable_range)):
+        for task in suitable_range[i]:
+            try:
+                pred_sublists[i].extend([predecessor[0] for predecessor in task.predecessors[0] if predecessor[0] not in pred_sublists[i] if predecessor[0] not in [task.id for task in suitable_range[i]]])
+            except KeyError:
+                pred_sublists[i] = [predecessor[0] for predecessor in task.predecessors[0] if predecessor[0] not in [task.id for task in suitable_range[i]]]
+            # order tasks in pred_sublist[i] according to their order in alr
+            pred_sublists[i].sort(key = lambda x:alr.index(project.tasks[x]))
+
+    print('pred_sublists', [[task for task in pred_sublists[i]] for i in range(len(suitable_range))])
+    print('non_sublist tasks', nonsublist_tasks)
+    h = 0
+    for i in range(len(suitable_range)):
+        print('p_sublists[i]', p_sublists[i])
+        # insert non-sublist activities
+        for j in range(h, p_sublists[i]):
+            if j in nonsublist_tasks:
+                print('h', h)
+                new_alr[h] = alr[j].id
+                print(new_alr)
+                h += 1
+        print('finished the first loop-----------------------------')
+        # insert predecessor activities
+        for j in range(len(pred_sublists[i])):
+            print('pred_sublists[i]', pred_sublists[i])
+            if pred_sublists[i][j] not in new_alr:
+                print('h', h)
+                new_alr[h] = pred_sublists[i][j]
+                print(new_alr)
+                h += 1
+        print('finished the second loop----------------------------')
+        # insert sublist
+        for j in range(len(suitable_range[i])):
+            print('h', h)
+            new_alr[h] = suitable_range[i][j].id
+            print(new_alr)
+            h += 1
+        print('finished the third loop-------------------------')
+    for j in range(len(alr)):
+        print('in final bit')
+        if alr[j].id not in new_alr:
+            new_alr[h] = alr[j].id
+            h += 1
+            print('h', h)
+    print(new_alr)
+
 
 def get_suitable_range(project, sublists):
     indices_available = [i for i in range(len(sublists))]
@@ -52,7 +109,6 @@ def get_suitable_range(project, sublists):
         sublist_a = sublists[index]
         suitable_range.append(sublist_a)
         indices_available = [i for i in indices_available if i in sublists_graph[index]]
-    print([[task.id for task in sublist] for sublist in suitable_range])
     return(suitable_range)
 
         
