@@ -11,7 +11,7 @@ from eva import evolutionary_algorithm
 
 test_instances_dir = Path("test_instances")
 project = load_instance(test_instances_dir/'sm_j10'/'PSP3_r1.sch')
-evolutionary_algorithm(project)
+evolutionary_algorithm(project, pop_size=50, n_generations=10)
 
 #print(project.R_max)
 #temporal_analysis(project)

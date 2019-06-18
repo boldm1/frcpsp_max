@@ -34,7 +34,7 @@ def load_instance(path_to_file):
             k += n_successors[i]
         ### second block ###
         line2 = stripped_lines[n_activities+activity+1]
-        w = int(line2[3]) # work content
+        w = int(line2[3]) # principle resource work content
         q_min = [] # min. per-period resource allocation for each resource 
         q_max = [] # max. per-period resource allocation for each resource
         for r in range(n_resources):
