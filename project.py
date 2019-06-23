@@ -1,4 +1,4 @@
-
+import sys
 from numpy import *
 from copy import deepcopy
 
@@ -7,6 +7,7 @@ from copy import deepcopy
 class Project():
 
     def __init__(self, name, tasks, R_max, l_min):         
+
         self.name = name
         self.tasks = tasks # tasks = {task_id : task_object}
         self.cycles = self.get_cycles()
@@ -44,14 +45,12 @@ class Project():
 
     # returns list of project cycles
     def get_cycles(self):
-        all_cycles = [[task_id]+path for task_id in self.tasks for path in self.dfs(task_id, task_id)]
-        cycles = []
-        for cycle in all_cycles:
-            first_task = cycle[0] # first task in cycle
-            final_arc = [arc for arc in self.tasks[cycle[-2]].raw_successors[0] if arc[0] == first_task][0]
-            if final_arc[1] < 0:
-                cycles.append(cycle)
-        return(cycles)
+        cycles = [[task_id]+path for task_id in self.tasks for path in self.dfs(task_id, task_id)]
+        unique_cycles = []
+        for cycle in cycles:
+            if True not in (set(cycle) == set(unique_cycle) for unique_cycle in unique_cycles):
+                unique_cycles.append(cycle)
+        return(unique_cycles)
 
    # depth-first search
     def dfs(self, start, end): # start(end) is task_id at start(end) of cycle
@@ -67,10 +66,11 @@ class Project():
                 stack.append((successor[0], path+[successor[0]]))
 
     def dgraph_init(self):
+        
         dgraph = [[array([[-self.T,-self.T], [-self.T,-self.T]]) for j in self.tasks] for i in self.tasks] # dgraph[i][j] = [[d_si->sj, d_si->fj],[d_fi->sj, d_fi->fj]]
         for i in self.tasks:
+            dgraph[0][i] = array([[0,0],[-self.T, -self.T]]) # ensure that activity 0 is scheduled first
             dgraph[i][i] = array([[0,self.tasks[i].d_min],[-self.tasks[i].d_max,0]])
-        for i in self.tasks:
             for j in range(4): # precedence relation type
                 for k in self.tasks[i].raw_successors[j]:
                     if j == 0: #S->S relation
@@ -81,6 +81,7 @@ class Project():
                         dgraph[i][k[0]][1][0] = k[1]
                     if j == 3: #F->F relation
                         dgraph[i][k[0]][1][1] = k[1]
+
         return(dgraph)    
 
     # updates dgraph for a given project
@@ -98,8 +99,7 @@ class Project():
         ### checking feasibility ###
         for i in self.tasks:
             if dgraph[i][i][0][0] != 0 or dgraph[i][i][1][1] != 0:
-                print('Project is infeasible.')
-                return(1)
+                sys.exit('Error: Project is infeasible with respect to temporal constraints.')
         self.dgraph = deepcopy(dgraph)
         ### update d_min, d_max, ES, LS, q_min, q_max ###
         for task in self.tasks.values():
@@ -107,6 +107,8 @@ class Project():
             task.d_max = -dgraph[task.id][task.id][1][0]
             task.ES = dgraph[0][task.id][0][0]
             task.LS = -dgraph[task.id][0][0][0]
+            task.EF = task.ES + task.d_min
+            task.LF = task.LS + task.d_max
             # only updating work-content resource limits
             if task.d_max == 0:
                 task.q_min[0] = 0
@@ -114,3 +116,6 @@ class Project():
             else:
                 task.q_min[0] = task.w/task.d_max
                 task.q_max[0] = task.w/task.d_min
+
+
+

@@ -23,13 +23,12 @@ def plot_schedule(schedule):
         print('%d: ' %task_id, blocks[task_id])
         # removing trivial first block
         blocks[task_id] = blocks[task_id][1:]
-        color = ['blue', 'green', 'red', 'yellow', 'pink', 'black', 'orange', 'purple', 'brown', 'gray'][task_id] 
         for block in blocks[task_id]:
             start = block[0]
             duration = block[1]
             finish = start + duration
             q = block[2]
-            ax.broken_barh([(start, duration)], (0, q), color = color, edgecolor = 'none', alpha = 0.3)
+            ax.broken_barh([(start, duration)], (0, q), edgecolor = 'none', alpha = 0.3)
             ax.text(start + duration/2, q/2, '%d' %task_id, color='black')
             # updating resource usage
             try:

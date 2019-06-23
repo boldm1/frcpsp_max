@@ -1,3 +1,6 @@
+import time
+
+
 import math
 from numpy import *
 from copy import deepcopy
@@ -9,18 +12,12 @@ from schedule import Schedule
 def sgs(project, alr):
     schedule = Schedule(project)
     for task_id in alr:
-        task = project.tasks[task_id]
+        task = schedule.tasks[task_id]
         schedule = greedily_schedule_task(task, project, schedule)
         # if greedy scheduling of task fails (i.e. misses max. time-lag)
         if schedule == 1:
 #            print('greedy scheduling has failed')
             return 1
-        else:
-            ### update dgraph given actual task start ###
-            schedule.dgraph[0][task_id][0][0] = schedule.task_starts[task_id]
-            schedule.dgraph[task_id][0][0][0] = -schedule.task_starts[task_id]
-            schedule.temporal_analysis()
-#    print('a feasible schedule has been found')
     return schedule
 
 def greedily_schedule_task(task, project, schedule, counter=0):
@@ -83,25 +80,36 @@ def greedily_schedule_task(task, project, schedule, counter=0):
             q[r] = task.q_min[r] 
         ### updating information ###
         for r in range(n_resources):
+#        for r in [0]:
             task_resource_usage[r][task.id][t] = q[r]
             resource_availability[r][t] -= q[r]
         zeta -= q[0]
         t += 1
 #    print('Task %d has been scheduled at time %d' %(task.id, task_start))
+    #if l < project.l_min:
+    #    return 1
     schedule.tasks_scheduled.append(task)
     schedule.task_starts[task.id] = task_start
     schedule.task_ends[task.id] = t
+#    print('task %d end:' %task.id, schedule.task_ends[task.id])
     for r in range(n_resources):
         schedule.task_resource_usage[r][task.id] = task_resource_usage[r][task.id]
         schedule.resource_availability[r] = resource_availability[r]
         schedule.makespan = max(schedule.task_ends.values())
+    ### updating dgraph ###
+    schedule.dgraph[0][task.id][0][0] = schedule.task_starts[task.id]
+    schedule.dgraph[0][task.id][0][1] = schedule.task_ends[task.id]
+    schedule.dgraph[task.id][0][0][0] = -schedule.task_starts[task.id]
+    schedule.dgraph[task.id][0][0][1] = -schedule.task_ends[task.id]
+    if schedule.temporal_analysis() == 1:
+        return 1
     return schedule
 
 # checks that current principle resource allocation is feasible for dependent resources. If not, calculates new feasible principle resource allocation
 def dependent_resource_allocation(task, q, resource_available):
     for r in task.r_dep:
         q[r] = task.alpha[r]*q[0] + task.beta[r]
-        if q[r] > resource_available[r]:
+        if q[r] > resource_available[r] + 0.001: # to avoid rounding errors
             q[r] = resource_available[r]
             # re-calculate principle resource allocation
             q[0] = (q[r] - task.beta[r])/task.alpha[r]

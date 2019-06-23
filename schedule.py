@@ -4,7 +4,7 @@ from copy import deepcopy
 class Schedule():
 
     def __init__(self, project):
-        self.tasks = project.tasks
+        self.tasks = deepcopy(project.tasks)
         self.dgraph = project.dgraph
         self.tasks_scheduled = []
         self.task_starts = {}
@@ -28,8 +28,8 @@ class Schedule():
         ### checking feasibility ###
         for i in self.tasks:
             if dgraph[i][i][0][0] != 0 or dgraph[i][i][1][1] != 0:
-                print('This schedule is infeasible.')
-                return(1)
+#                print('This schedule is infeasible.')
+                return 1 
         self.dgraph = deepcopy(dgraph)
         ### update d_min, d_max, ES, LS, q_min, q_max ###
         for task in self.tasks.values():
@@ -44,3 +44,4 @@ class Schedule():
             else:
                 task.q_min[0] = task.w/task.d_max
                 task.q_max[0] = task.w/task.d_min
+        return 0

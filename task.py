@@ -36,3 +36,5 @@ class Task():
         ### earliest and latest starts ###
         self.ES = float('-inf') # Earliest start wrt temporal constraints (updated in temporal_analysis)
         self.LS = float('inf')
+        self.EF = float('-inf')
+        self.LF = float('inf')
