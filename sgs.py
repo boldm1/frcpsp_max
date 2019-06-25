@@ -86,8 +86,9 @@ def greedily_schedule_task(task, project, schedule, counter=0):
         zeta -= q[0]
         t += 1
 #    print('Task %d has been scheduled at time %d' %(task.id, task_start))
-    #if l < project.l_min:
-    #    return 1
+    # check min. block length is satisfied; returns infeasible if w/q_min < l_min 
+    if l < project.l_min:
+        return 1
     schedule.tasks_scheduled.append(task)
     schedule.task_starts[task.id] = task_start
     schedule.task_ends[task.id] = t

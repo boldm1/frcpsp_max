@@ -9,6 +9,9 @@ import os
 def mip_solve(project):    
 
     model = Model("Intensity-based (FB-DT3)")
+    model.setParam('TimeLimit', 3*60)
+    model.setParam('OutputFlag', 0) # silence gurobi output
+    model.setParam('Threads', 4) # limit number of threads to 4
 
     #Index sets
     V = [task.id for task in list(project.tasks.values())] # list of task indices
@@ -66,24 +69,26 @@ def mip_solve(project):
     model.addConstrs((0 <= v[j,t] <= 1 for j in N for t in T_act[j]+[project.tasks[j].LF+1]), name = "(47)")
 
     model.optimize()
-    status = model.status
-    current_dir = os.path.dirname(__file__)
-    if status == GRB.Status.UNBOUNDED:
-        print('The model cannot be solved because it is unbounded')
-        exit(0)
-    elif status == GRB.Status.OPTIMAL:
-        print('The optimal objective value is %g' %model.objVal)
-        # write model to file
-        model.write(os.path.join(current_dir, 'solutions', '%s.lp' %project.name))
-        # write solution to file
-        model.write(os.path.join(current_dir, 'solutions', '%s.sol' %project.name))
-        exit(0)
-    elif status == GRB.Status.INFEASIBLE:
-        model.computeIIS()
-        model.write(os.path.join(current_dir, 'solutions', '%s.ilp' %project.name))
-        print("The model cannot be solved because it is infeasible. IIS written to file '%s.ilp'" %project.name)
-        exit(0)
-    
+    return model
+#    status = model.status
+#    current_dir = os.path.dirname(__file__)
+#    if status == GRB.Status.UNBOUNDED: # Not actually possible for this problem
+##        print('The model cannot be solved because it is unbounded')
+#        exit(0)
+#    elif status == GRB.Status.OPTIMAL:
+##        print('The optimal objective value is %g' %model.objVal)
+#        # write model to file
+#        model.write(os.path.join(current_dir, 'solutions', '%s.lp' %project.name))
+#        # write solution to file
+#        model.write(os.path.join(current_dir, 'solutions', '%s.sol' %project.name))
+#        exit(0)
+#    return model
+#    elif status == GRB.Status.INFEASIBLE:
+#        model.computeIIS()
+#        model.write(os.path.join(current_dir, 'solutions', '%s.ilp' %project.name))
+##        print("The model cannot be solved because it is infeasible. IIS written to file '%s.ilp'" %project.name)
+#        exit(0)
+#    return 1 # infeasible
 
 
     

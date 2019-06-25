@@ -13,8 +13,8 @@ from sgs import sgs
 
 def evolutionary_algorithm(project, pop_size, n_generations):
     init_pop = get_init_pop(project, pop_size)
-    for alr in init_pop:
-        print(alr)
+#    for alr in init_pop:
+#        print(alr)
     if init_pop == 1:
         return(1)
     solutions = []
@@ -32,9 +32,9 @@ def evolutionary_algorithm(project, pop_size, n_generations):
         print('generation %d: ' %generation, sorted([solution[1] for solution in solutions]))
     sorted_solutions = sorted(solutions, key=lambda solution:solution[1])
     best_alr = sorted_solutions[0][0]
-    print('best_alr', best_alr)
-    schedule = sgs(project, best_alr)
-    plot_schedule(schedule)
+#    print('best_alr', best_alr)
+#    schedule = sgs(project, best_alr)
+#    plot_schedule(schedule)
 
 def get_new_generation(project, solutions, pop_size):
     sorted_old_solutions = sorted(solutions, key=itemgetter(1))
@@ -159,13 +159,16 @@ def edge_check(project, sublist1, sublist2):
 
 # randomly splits the conglomerate partitions of two activity list representations and returns a list of sublists 
 def get_conglomerate_sublists(project, alr1, alr2):
-    sublists = []
     alr1_partition = get_conglomerate_partition(project, alr1)
-    for list in alr1_partition:
-        sublists.append(list)
     alr2_partition = get_conglomerate_partition(project, alr2)
-    for list in alr2_partition:
-        sublists.append(list)
+    # further division of sublists to random size between 3 and 30
+    sublist_len = random.randint(3, 10)
+    alr1_further_partition, alr2_further_partition = [], []
+    for sublist in alr1_partition:
+        alr1_further_partition.extend([sublist[x:x+sublist_len] for x in range(0, len(sublist), sublist_len)])
+    for sublist in alr2_partition:
+        alr2_further_partition.extend([sublist[x:x+sublist_len] for x in range(0, len(sublist), sublist_len)])
+    sublists = alr1_further_partition + alr2_further_partition
     return sublists
 
 # partitions alr into sublists based on conglomerates

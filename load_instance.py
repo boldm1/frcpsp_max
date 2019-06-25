@@ -1,3 +1,4 @@
+import os
 import re
 
 from task import Task
@@ -51,6 +52,7 @@ def load_instance(path_to_file):
         R_max.append(int(last_line[r]))
     l_min = int(last_line[n_resources]) # min. block length
     ### create project ###
-    project = Project(path_to_file, tasks, R_max, l_min)
+    project_name = os.path.splitext(os.path.basename(os.path.normpath(path_to_file)))[0]
+    project = Project(project_name, tasks, R_max, l_min)
     return(project)
 
