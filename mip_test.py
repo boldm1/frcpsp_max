@@ -5,15 +5,12 @@ import os.path
 import re
 
 from load_instance import load_instance
-from eva import evolutionary_algorithm
 from dt3 import mip_solve
 
 
 test_instances_dir = os.path.join('test_instances', 'sm_j10')
 f1 = open('smj10_mip_results.txt', 'w+')
 f1.write('instance \t feas \t opt \t LB \t sol \t gap \t time \n')
-#for filename in os.listdir(test_instances_dir):
-#    print(''.join(re.findall(r'\d+', filename)))
 for full_filename in sorted(os.listdir(test_instances_dir), key = lambda filename: int(''.join(re.findall(r'\d+', filename)))):
     print(full_filename)
     project = load_instance(os.path.join(test_instances_dir, full_filename))
@@ -29,6 +26,5 @@ for full_filename in sorted(os.listdir(test_instances_dir), key = lambda filenam
         elif model.SolCount != 0:
             f1.write('{} \t yes \t no \t {} \t {} \t 180 \n'.format(project.name, model.ObjBound, model.ObjVal, model.MIPGap))
 f1.close()
-#evolutionary_algorithm(project, pop_size=50, n_generations=10)
 
 
